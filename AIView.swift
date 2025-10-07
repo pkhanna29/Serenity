@@ -54,7 +54,7 @@ struct AIView: View {
                     }
                     .padding(.vertical)
                 }
-                .onChange(of: messages.count) {
+                .onChange(of: messages.count) { __ in
                     withAnimation {
                         scrollView.scrollTo(messages.last?.id)
                     }
