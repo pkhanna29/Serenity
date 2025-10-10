@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import Combine
 
 // MARK: - Data Model
 
@@ -71,10 +72,11 @@ struct MoodEntry: Identifiable, Codable {
 
 @MainActor
 final class MoodStore: ObservableObject {
+    static let shared = MoodStore()
     @Published var entries: [MoodEntry] = [] { didSet { save() } }
     private let storageKey = "moodEntries.v1"
     
-    init() { load() }
+    private init() { load() }
     
     func add(_ mood: Mood, note: String? = nil) {
         entries.append(MoodEntry(mood: mood, note: note))
@@ -108,7 +110,7 @@ final class MoodStore: ObservableObject {
 // MARK: - Root View
 
 struct EmotionHomeView: View {
-    @StateObject private var store = MoodStore()
+    @StateObject private var store = MoodStore.shared
     
     var body: some View {
         TabView {

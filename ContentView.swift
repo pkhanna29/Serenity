@@ -50,7 +50,7 @@ struct HomeViewPage: View {
                                 Spacer()
                                 
                                 NavigationLink {
-                                    EmotionLogView()
+                                    EmotionHomeView()
                                 }label:{
                                     Text("Log")
                                         .frame(alignment: .center)
