@@ -195,12 +195,16 @@ struct HabitListView: View {
             }
             .navigationTitle("Today's Habits")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAddSheet = true } label: {
-                        Label("Add", systemImage: "plus")
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showAddSheet = true
+                    } label: {
+                        Label("Add Habit", systemImage: "plus")
+                            .labelStyle(.iconOnly)
                     }
                 }
             }
+
             .sheet(isPresented: $showAddSheet) {
                 EditHabitSheet { name, color, days in
                     habits.append(Habit(name: name, color: color, activeDays: days))
