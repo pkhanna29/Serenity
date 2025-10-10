@@ -1,6 +1,5 @@
 import SwiftUI
 import Charts
-import Combine
 
 // MARK: - Data Model
 
@@ -8,6 +7,7 @@ enum Mood: String, CaseIterable, Identifiable, Codable {
     case happy, sad, calm, angry, anxious, tired, lazy, excited, focused
     
     var id: String { rawValue }
+    
     var label: String {
         switch self {
         case .happy: return "Happy"
@@ -50,6 +50,8 @@ enum Mood: String, CaseIterable, Identifiable, Codable {
         }
     }
 }
+
+// MARK: - Mood Entry
 
 struct MoodEntry: Identifiable, Codable {
     let id: UUID
@@ -103,7 +105,7 @@ final class MoodStore: ObservableObject {
     }
 }
 
-// MARK: - Root
+// MARK: - Root View
 
 struct EmotionHomeView: View {
     @StateObject private var store = MoodStore()
@@ -125,7 +127,7 @@ struct EmotionHomeView: View {
     }
 }
 
-// MARK: - Log View (Grid of moods)
+// MARK: - Log View
 
 struct EmotionLogView: View {
     @EnvironmentObject private var store: MoodStore
@@ -143,7 +145,9 @@ struct EmotionLogView: View {
                             store.add(mood, note: note.isEmpty ? nil : note)
                             note = ""
                             withAnimation { showSavedToast = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { withAnimation { showSavedToast = false } }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                withAnimation { showSavedToast = false }
+                            }
                         }
                     }
                 }
@@ -172,6 +176,8 @@ struct EmotionLogView: View {
     }
 }
 
+// MARK: - Mood Button
+
 struct MoodButton: View {
     let mood: Mood
     var action: () -> Void
@@ -199,7 +205,7 @@ struct MoodButton: View {
     }
 }
 
-// MARK: - Trends View (Charts)
+// MARK: - Trends View
 
 struct TrendsView: View {
     @EnvironmentObject private var store: MoodStore
@@ -229,9 +235,8 @@ struct TrendsView: View {
                 }
                 
                 Chart {
-                    ForEach(groupedByDay, id: \..date) { day in
+                    ForEach(groupedByDay, id: \.date) { day in
                         let total = day.counts.values.reduce(0, +)
-                        // Stacked bars by mood per day
                         ForEach(Mood.allCases) { mood in
                             if let c = day.counts[mood], c > 0 {
                                 BarMark(
@@ -242,14 +247,13 @@ struct TrendsView: View {
                                 .position(by: .value("Mood", mood.label))
                             }
                         }
-                        // A thin rule for total entries that day
                         if total > 0 {
                             RuleMark(x: .value("Day", day.date))
                                 .annotation(position: .top, alignment: .center) {
                                     Text("\(total)").font(.caption2)
                                 }
                                 .foregroundStyle(.secondary)
-                                .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [2,2]))
+                                .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [2, 2]))
                         }
                     }
                 }
@@ -261,31 +265,34 @@ struct TrendsView: View {
                 .frame(height: 280)
                 .padding(.horizontal)
                 
-                // Mood distribution pie
                 let distribution = Dictionary(grouping: store.entries, by: { $0.mood }).mapValues { $0.count }
+                
                 if !store.entries.isEmpty {
                     Text("Overall distribution")
                         .font(.headline)
                         .padding(.horizontal)
+                    
                     Chart(distribution.sorted { $0.key.label < $1.key.label }, id: \.key) { mood, count in
-                        SectorMark(
-                            angle: .value("Count", count)
-                        )
-                        .foregroundStyle(mood.color)
-                        .annotation(position: .overlay) {
-                            if count > 0 {
-                                Text(mood.emoji)
-                                    .font(.caption)
+                        SectorMark(angle: .value("Count", count))
+                            .foregroundStyle(mood.color)
+                            .annotation(position: .overlay) {
+                                if count > 0 {
+                                    Text(mood.emoji).font(.caption)
+                                }
                             }
-                        }
                     }
                     .frame(height: 200)
                     .padding(.horizontal)
                 } else {
-                    ContentUnavailableView("No data yet", systemImage: "chart.bar", description: Text("Log a mood to see your trends."))
-                        .frame(maxWidth: .infinity)
-                        .padding()
+                    ContentUnavailableView(
+                        "No data yet",
+                        systemImage: "chart.bar",
+                        description: Text("Log a mood to see your trends.")
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding()
                 }
+                
                 Spacer()
             }
             .navigationTitle("Trends")
@@ -293,16 +300,21 @@ struct TrendsView: View {
     }
 }
 
-// MARK: - History View (List)
+// MARK: - History View
 
 struct HistoryView: View {
     @EnvironmentObject private var store: MoodStore
     @State private var search = ""
     
     var filtered: [MoodEntry] {
-        guard !search.isEmpty else { return store.entries.sorted { $0.date > $1.date } }
-        return store.entries.filter { ($0.note ?? "").localizedCaseInsensitiveContains(search) || $0.mood.label.localizedCaseInsensitiveContains(search) }
-            .sorted { $0.date > $1.date }
+        guard !search.isEmpty else {
+            return store.entries.sorted { $0.date > $1.date }
+        }
+        return store.entries.filter {
+            ($0.note ?? "").localizedCaseInsensitiveContains(search) ||
+            $0.mood.label.localizedCaseInsensitiveContains(search)
+        }
+        .sorted { $0.date > $1.date }
     }
     
     var body: some View {
@@ -312,8 +324,7 @@ struct HistoryView: View {
                     HStack(spacing: 12) {
                         Text(entry.mood.emoji).font(.title3)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(entry.mood.label)
-                                .font(.headline)
+                            Text(entry.mood.label).font(.headline)
                             Text(entry.date.formatted(date: .abbreviated, time: .shortened))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
