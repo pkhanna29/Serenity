@@ -1,94 +1,163 @@
 import SwiftUI
-//import UIKit
-struct HomeView: View {
-    var body: some View {
-        NavigationView {
-            VStack {
-                // Header
-                VStack {
-                    Text("Welcome to Serenity")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
-                        .padding(.top, 20)
-                    
-                    Image(systemName: "lightbulb.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 100, height: 100)
-                        .foregroundColor(.blue)
-                        .padding(.bottom, 20)
-                }
-                
-                // Main Content
-                VStack(spacing: 20) {
-                    Text("Discover resources to improve your well-being")
-                        .font(.headline)
-                        .foregroundColor(.gray)
-                    
-                    Text("Explore articles, exercises, and more to support your journey towards personal growth.")
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 15)
-                        .foregroundColor(Color(UIColor.systemGray5))
-                )
-                .padding(.horizontal)
-                
-                // Custom Button
-                NavigationLink(destination: HomeViewPage()) {
-                    Text("Get Started")
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
-                .padding(.top, 10)
-                
-                // Footer
-                Text("Reminder this is NOT for Emergencies, if in need of help, call 911 or 988")
-                    .padding(30)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.red)
-                    .font(.system(size: 12))
-                    .bold()
-                Text("© 2024 Serenity")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-                    .padding(.top, 20)
-            }
-            .padding()
-            .navigationBarTitle("")
-            .navigationBarHidden(true)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white) // optional
-        .edgesIgnoringSafeArea(.all)
-    }
+import UIKit // for UIImage(named:)
+
+private enum SerenityTheme {
+    static let top = Color(red: 0.75, green: 0.80, blue: 0.96)
+    static let bottom = Color(red: 0.83, green: 0.94, blue: 0.84)
+    static let accent = Color(red: 0.30, green: 0.45, blue: 0.70)
+    static let textPrimary = Color.white.opacity(0.95)
+    static let textSecondary = Color.white.opacity(0.80)
 }
 
+struct HomeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
+    @State private var didAppear = false
+    @State private var showTitle = false
+    @State private var showTagline = false
+    @State private var pulse = false   // drives the CTA ring
 
-struct DetailView: View {
     var body: some View {
-        VStack {
-            Text("Welcome to My App!")
-                .font(.title)
-                .fontWeight(.bold)
-                .padding()
-            
-            Text("In this application, you will have access to an AI chatbot, surveys, and more!")
-                .padding(.bottom, 50)
-            
-            Text("Simply click on one of the bottom tabs to get started! This app is purely anonymous and none of your results will be shared, providing a safe space to take some time for yourself.")
-                .multilineTextAlignment(.center)
-                .font(.caption)
-                .padding()
+        NavigationStack {
+            ZStack {
+                LinearGradient(colors: [SerenityTheme.top, SerenityTheme.bottom],
+                               startPoint: .topLeading,
+                               endPoint: .bottomTrailing)
+                    .ignoresSafeArea()
+
+                VStack(spacing: 20) {
+                    // Logo + Title
+                    VStack(spacing: 10) {
+                        if UIImage(named: "SerenityLogo") != nil {
+                            Image("SerenityLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 110, height: 110)
+                                .accessibilityLabel("Serenity Logo")
+                                .scaleEffect(didAppear && !reduceMotion ? 1.0 : 0.94)
+                                .opacity(didAppear ? 1 : 0)
+                                .animation(reduceMotion ? nil :
+                                           .interpolatingSpring(stiffness: 180, damping: 20).delay(0.0),
+                                           value: didAppear)
+                        } else {
+                            Image(systemName: "waveform.path.ecg")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 96, height: 96)
+                                .foregroundStyle(.white)
+                                .accessibilityHidden(true)
+                                .scaleEffect(didAppear && !reduceMotion ? 1.0 : 0.94)
+                                .opacity(didAppear ? 1 : 0)
+                                .animation(reduceMotion ? nil :
+                                           .interpolatingSpring(stiffness: 180, damping: 20).delay(0.0),
+                                           value: didAppear)
+                        }
+
+                        Text("SERENITY")
+                            .font(.system(size: 26, weight: .semibold, design: .rounded))
+                            .foregroundStyle(SerenityTheme.textPrimary)
+                            .opacity(showTitle ? 1 : 0)
+                            .offset(y: showTitle || reduceMotion ? 0 : 6)
+                            .animation(reduceMotion ? nil :
+                                       .easeOut(duration: 0.35).delay(0.10),
+                                       value: showTitle)
+                    }
+
+                    // Tagline
+                    VStack(spacing: 6) {
+                        Text("Welcome to Serenity")
+                            .font(.headline)
+                            .foregroundStyle(SerenityTheme.textPrimary)
+
+                        Text("Your space for mindfulness, emotional balance, and growth.")
+                            .font(.subheadline)
+                            .foregroundStyle(SerenityTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 24)
+                    }
+                    .opacity(showTagline ? 1 : 0)
+                    .offset(y: showTagline || reduceMotion ? 0 : 8)
+                    .animation(reduceMotion ? nil :
+                               .easeOut(duration: 0.35).delay(0.22),
+                               value: showTagline)
+
+                    // CTA with tighter pulse ring (inside bounds)
+                    NavigationLink {
+                        HomeViewPage()
+                    } label: {
+                        Text("Get Started")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(Color.white.opacity(0.92))
+                            .foregroundStyle(SerenityTheme.accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                // Ring stays within button via inset; tiny scale range
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .inset(by: 2)
+                                    .stroke(SerenityTheme.accent.opacity(0.28), lineWidth: 2)
+                                    .scaleEffect(pulse ? 1.015 : 1.0, anchor: .center) // ~1.5% only
+                                    .opacity(pulse ? 0.0 : 1.0)
+                                    .animation(reduceMotion ? nil :
+                                               .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
+                                               value: pulse)
+                            )
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.top, 6)
+                    .task {
+                        // Start pulse when view appears if motion allowed
+                        guard !reduceMotion else { return }
+                        pulse = false
+                        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                            pulse = true
+                        }
+                    }
+
+                    // Disclaimer
+                    VStack(spacing: 4) {
+                        Text("This app is not a substitute for medical care.")
+                            .font(.caption)
+                            .foregroundStyle(SerenityTheme.textSecondary)
+                        Text("If you are in crisis, call 911 or 988.")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(SerenityTheme.textPrimary)
+                    }
+                    .padding(.top, 8)
+                    .opacity(didAppear ? 1 : 0)
+                }
+                .padding(.vertical, 32)
+                .padding(.horizontal, 16)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
+            .onAppear {
+                // staged intro, respecting Reduce Motion
+                didAppear = true
+                if !reduceMotion {
+                    showTitle = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { showTagline = true }
+                } else {
+                    showTitle = true; showTagline = true
+                }
+            }
+            // NEW: use task(id:) instead of deprecated onChange
+            .task(id: scenePhase) {
+                guard !reduceMotion else { return }
+                if scenePhase == .active {
+                    // restart the pulse loop when returning to foreground
+                    pulse = false
+                    withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                        pulse = true
+                    }
+                } else {
+                    // stop pulse to save cycles
+                    pulse = false
+                }
+            }
         }
-        .navigationBarTitle("")
-        .navigationBarHidden(true)
     }
 }
 
