@@ -1,23 +1,11 @@
 import SwiftUI
 
-// MARK: - Serenity Theme (lightweight + consistent)
-private enum SerenityTheme {
-    static let top = Color(red: 0.75, green: 0.80, blue: 0.96)   // soft lavender-blue
-    static let bottom = Color(red: 0.83, green: 0.94, blue: 0.84) // light sage-green
-    static let accent = Color(red: 0.30, green: 0.45, blue: 0.70) // muted blue
-    static let cardBG = Color.white.opacity(0.92)
-    static let textPrimary = Color.white.opacity(0.95)
-    static let textSecondary = Color.white.opacity(0.80)
-}
 
 struct HomeViewPage: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background gradient (cheap)
-                LinearGradient(colors: [SerenityTheme.top, SerenityTheme.bottom],
-                               startPoint: .topLeading,
-                               endPoint: .bottomTrailing)
+                SerenityTheme.backgroundGradient
                 .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
@@ -45,8 +33,7 @@ struct HomeViewPage: View {
                             HStack(alignment: .center) {
                                 Text("How are you feeling today?")
                                     .font(.title3.weight(.semibold))
-                                    .foregroundStyle(SerenityTheme.textPrimary)
-                                
+                                    .foregroundStyle(.black)
                                 Spacer()
                                 
                                 NavigationLink {

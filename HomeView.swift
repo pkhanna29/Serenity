@@ -1,13 +1,6 @@
 import SwiftUI
 import UIKit // for UIImage(named:)
 
-private enum SerenityTheme {
-    static let top = Color(red: 0.75, green: 0.80, blue: 0.96)
-    static let bottom = Color(red: 0.83, green: 0.94, blue: 0.84)
-    static let accent = Color(red: 0.30, green: 0.45, blue: 0.70)
-    static let textPrimary = Color.white.opacity(0.95)
-    static let textSecondary = Color.white.opacity(0.80)
-}
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -21,9 +14,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient(colors: [SerenityTheme.top, SerenityTheme.bottom],
-                               startPoint: .topLeading,
-                               endPoint: .bottomTrailing)
+                SerenityTheme.backgroundGradient
                     .ignoresSafeArea()
 
                 VStack(spacing: 20) {
