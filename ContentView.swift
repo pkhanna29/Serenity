@@ -100,7 +100,7 @@ struct HomeViewPage: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar(.hidden, for: .navigationBar)
+            //.toolbar(.hidden, for: .navigationBar)
         }
     }
 }

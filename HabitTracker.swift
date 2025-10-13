@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-
 // MARK: - Model
 
 struct Habit: Identifiable, Codable, Equatable {
@@ -141,84 +140,102 @@ struct EditHabitSheet: View {
 }
 
 // MARK: - Daily List
-
 struct HabitListView: View {
     @AppStorage(habitsKey) private var habitsData: Data = Data()
     @State private var habits: [Habit] = []
     @State private var showAddSheet = false
     private let calendar = Calendar.current
-    
-    var todayHabits: [Habit] {
-        habits.filter { $0.isScheduled(for: Date(), calendar: calendar) }
+
+    // Indexes of habits scheduled for *today* (used for safe delete mapping)
+    private var todayIndexes: [Int] {
+        habits.indices.filter { habits[$0].isScheduled(for: Date(), calendar: calendar) }
     }
-    
+
+    // MARK: - Persistence
+    private func load() {
+        habits = [Habit].decoded(from: habitsData)
+    }
+    private func save() {
+        habitsData = habits.encoded()
+    }
+
     var body: some View {
         NavigationStack {
-            List {
-                if todayHabits.isEmpty {
-                    ContentUnavailableView("No Habits Today", systemImage: "sun.max",
-                                           description: Text("Enjoy your rest day or add a new habit!"))
+            Group {
+                if todayIndexes.isEmpty {
+                    ContentUnavailableView(
+                        "No Habits Today",
+                        systemImage: "sun.max",
+                        description: Text("Enjoy your rest day or add a new habit!")
+                    )
                 } else {
-                    ForEach($habits) { $habit in
-                        if habit.isScheduled(for: Date(), calendar: calendar) {
-                            HStack {
+                    List {
+                        ForEach(todayIndexes, id: \.self) { i in
+                            let binding = $habits[i]
+                            HStack(spacing: 12) {
                                 Button {
-                                    habit.toggle(on: Date(), calendar: calendar)
+                                    binding.wrappedValue.toggle(on: Date(), calendar: calendar)
                                     save()
                                 } label: {
-                                    Image(systemName: habit.isDone(on: Date()) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(habit.color.color)
-                                        .imageScale(.large)
+                                    Image(systemName: binding.wrappedValue.isDone(on: Date(), calendar: calendar)
+                                          ? "checkmark.circle.fill" : "circle")
                                 }
                                 .buttonStyle(.plain)
-                                
-                                Text(habit.name)
-                                    .strikethrough(habit.isDone(on: Date()))
-                                    .foregroundColor(habit.isDone(on: Date()) ? .secondary : .primary)
-                                
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(binding.wrappedValue.name)
+                                        .font(.headline)
+                                    // Optional: add a subtitle if you have one
+                                    // Text(binding.wrappedValue.scheduleSummary)
+                                    //   .font(.caption).foregroundStyle(.secondary)
+                                }
                                 Spacer()
-                                
-                                if habit.isDone(on: Date()) {
-                                    Text("Done")
-                                        .font(.caption)
-                                        .foregroundStyle(.green)
-                                }
+                                Circle()
+                                    .fill(binding.wrappedValue.color.color)
+                                    .frame(width: 10, height: 10)
+                                    .accessibilityHidden(true)
                             }
-                            .swipeActions {
-                                Button(role: .destructive) { delete(habit) } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
+                            .contentShape(Rectangle())
+                        }
+                        .onDelete { offsets in
+                            // Map the visible row offsets back to real indices
+                            let real = IndexSet(offsets.map { todayIndexes[$0] })
+                            habits.remove(atOffsets: real)
+                            save()
                         }
                     }
+                    .listStyle(.insetGrouped)
                 }
             }
             .navigationTitle("Today's Habits")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showAddSheet = true
-                    } label: {
-                        Label("Add Habit", systemImage: "plus")
-                            .labelStyle(.iconOnly)
-                    }
-                }
-            }
-
-            .sheet(isPresented: $showAddSheet) {
-                EditHabitSheet { name, color, days in
-                    habits.append(Habit(name: name, color: color, activeDays: days))
-                    save()
-                }
-            }
-            .onAppear(perform: load)
         }
+        // Floating "+" button overlay
+        .overlay(alignment: .bottomTrailing) {
+            Button { showAddSheet = true } label: {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 52, weight: .semibold))
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: Circle().inset(by: -6))
+                    .shadow(radius: 6)
+                    .accessibilityLabel("Add Habit")
+            }
+            .padding(.trailing, 16)
+            .padding(.bottom, 28) // keep clear of Tab Bar
+        }
+        // Add/Edit sheet (uses your EditHabitSheet defined above)
+        .sheet(isPresented: $showAddSheet) {
+            EditHabitSheet { name, color, activeDays in
+                let newHabit = Habit(name: name, color: color, activeDays: activeDays)
+                habits.append(newHabit)
+                save()
+            }
+            .presentationDetents([.medium, .large])
+        }
+        .onAppear(perform: load)
     }
-    
-    private func load() { habits = [Habit].decoded(from: habitsData) }
-    private func save() { habitsData = habits.encoded() }
-    private func delete(_ habit: Habit) { habits.removeAll { $0.id == habit.id }; save() }
 }
+
+
 
 // MARK: - Calendar Progress
 
@@ -229,53 +246,59 @@ struct HabitCalendarView: View {
     private let calendar = Calendar.current
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                DatePicker("Select Date", selection: $selectedDate, displayedComponents: [.date])
-                    .datePickerStyle(.graphical)
-                    .padding()
-                
-                let shown = habits.filter { $0.isScheduled(for: selectedDate, calendar: calendar) }
-                if shown.isEmpty {
-                    ContentUnavailableView("No Habits", systemImage: "calendar",
-                                           description: Text("No scheduled habits for this day."))
-                } else {
-                    List {
-                        ForEach(shown) { habit in
-                            HStack {
-                                Circle()
-                                    .fill(habit.color.color)
-                                    .frame(width: 10, height: 10)
-                                Text(habit.name)
-                                Spacer()
-                                Image(systemName: habit.isDone(on: selectedDate)
-                                      ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(habit.isDone(on: selectedDate)
-                                                     ? habit.color.color : .gray)
-                            }
+        VStack {
+            DatePicker("Select Date", selection: $selectedDate, displayedComponents: [.date])
+                .datePickerStyle(.graphical)
+                .padding()
+            
+            let shown = habits.filter { $0.isScheduled(for: selectedDate, calendar: calendar) }
+            if shown.isEmpty {
+                ContentUnavailableView(
+                    "No Habits",
+                    systemImage: "calendar",
+                    description: Text("No scheduled habits for this day.")
+                )
+            } else {
+                List {
+                    ForEach(shown) { habit in
+                        HStack {
+                            Circle()
+                                .fill(habit.color.color)
+                                .frame(width: 10, height: 10)
+                            Text(habit.name)
+                            Spacer()
+                            Image(systemName: habit.isDone(on: selectedDate) ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(habit.isDone(on: selectedDate) ? habit.color.color : .gray)
                         }
                     }
                 }
             }
-            .navigationTitle("Calendar Progress")
-            .onAppear { habits = [Habit].decoded(from: habitsData) }
         }
+        .navigationTitle("Calendar Progress")
+        .onAppear { habits = [Habit].decoded(from: habitsData) }
     }
 }
+
 
 // MARK: - Root TabView
 
 struct HabitTracker: View {
     var body: some View {
         TabView {
-            HabitListView()
-                .tabItem { Label("Today", systemImage: "checkmark.circle") }
-            
-            HabitCalendarView()
-                .tabItem { Label("Calendar", systemImage: "calendar") }
+            NavigationStack {
+                HabitListView()   // keeps its .navigationTitle and .toolbar
+            }
+            .tabItem { Label("Today", systemImage: "checkmark.circle") }
+
+            NavigationStack {
+                HabitCalendarView()
+            }
+            .tabItem { Label("Calendar", systemImage: "calendar") }
         }
     }
 }
+
+
 
 // MARK: - Preview
 

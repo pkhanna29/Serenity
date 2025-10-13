@@ -139,43 +139,42 @@ struct EmotionLogView: View {
     let grid = [GridItem(.adaptive(minimum: 110), spacing: 12)]
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: grid, spacing: 12) {
-                    ForEach(Mood.allCases) { mood in
-                        MoodButton(mood: mood) {
-                            store.add(mood, note: note.isEmpty ? nil : note)
-                            note = ""
-                            withAnimation { showSavedToast = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                                withAnimation { showSavedToast = false }
-                            }
+        ScrollView {
+            LazyVGrid(columns: grid, spacing: 12) {
+                ForEach(Mood.allCases) { mood in
+                    MoodButton(mood: mood) {
+                        store.add(mood, note: note.isEmpty ? nil : note)
+                        note = ""
+                        withAnimation { showSavedToast = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            withAnimation { showSavedToast = false }
                         }
                     }
                 }
-                .padding(.horizontal)
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Optional note")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    TextField("Add a quick note…", text: $note)
-                        .textFieldStyle(.roundedBorder)
-                }
-                .padding()
             }
-            .overlay(alignment: .top) {
-                if showSavedToast {
-                    Label("Saved", systemImage: "checkmark.circle.fill")
-                        .padding(8)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .padding(.top, 8)
-                }
+            .padding(.horizontal)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Optional note")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                TextField("Add a quick note…", text: $note)
+                    .textFieldStyle(.roundedBorder)
             }
-            .navigationTitle("Emotion Tracker")
+            .padding()
         }
+        .overlay(alignment: .top) {
+            if showSavedToast {
+                Label("Saved", systemImage: "checkmark.circle.fill")
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 8)
+            }
+        }
+        .navigationTitle("Emotion Tracker")   // ← still set the title
     }
+
 }
 
 // MARK: - Mood Button
