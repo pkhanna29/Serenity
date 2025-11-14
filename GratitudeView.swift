@@ -235,7 +235,7 @@ struct TodaysGratitudeView: View {
         .refreshable {
             updateTodaysEntries()
         }
-        .navigationBarHidden(true)
+        .navigationBarHidden(false)
     }
     
     private func updateTodaysEntries() {
