@@ -126,39 +126,6 @@ struct ToolButton: View {
     }
 }
 
-// MARK: - Tabs (tinted to theme)
-struct ContentView: View {
-    var body: some View {
-        TabView {
-            HomeViewPage()
-                .tabItem {
-                    Image(systemName: "house")
-                    Text("Home")
-                }
-
-            GratitudeView()
-                .tabItem {
-                    Image(systemName: "heart.circle")
-                    Text("Gratitude")
-                }
-
-            AIView()
-                .tabItem {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                    Text("AI")
-                }
-        }
-        .tint(SerenityTheme.accent) // accent across the tab bar / controls
-        // Optional: a subtle background for the whole tab view
-        .background(
-            LinearGradient(colors: [SerenityTheme.top, SerenityTheme.bottom],
-                           startPoint: .topLeading,
-                           endPoint: .bottomTrailing)
-            .ignoresSafeArea()
-        )
-    }
-}
-
 // MARK: - Preview
 #Preview {
     HomeViewPage()
